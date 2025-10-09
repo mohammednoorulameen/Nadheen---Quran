@@ -24,7 +24,7 @@ const UserRouters = [
         element: <Quran/>
       },
       {
-        path: "/surah",
+        path: "/surah/:number",
         element: <SurahPage/>
       },
       {
