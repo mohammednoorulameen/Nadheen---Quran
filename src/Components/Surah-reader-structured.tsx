@@ -87,12 +87,21 @@ export function SurahReaderStructured({
   const [isCentered, setIsCentered] = useState<boolean>(defaultCentered);
   const [layout, setLayout] = useState<"line" | "page">("line"); // local mirror
 
+  // refs & state for audio
   const ayahRefs = useRef<Record<number, HTMLDivElement | null>>({});
   const currentAyahRef = useRef<number>(1);
+
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const currentIndexRef = useRef<number>(0);
-  const playNextRef = useRef<(() => void) | null>(null);
+  const nextHandlerRef = useRef<(() => void) | null>(null);
+
   const [isPlaying, setIsPlaying] = useState(false);
+
+  // state that coordinates with AudioPlayerBar (if it supports startIndex/playTrigger)
+  const [audioPlayIndex, setAudioPlayIndex] = useState<number | null>(null);
+  const [playTrigger, setPlayTrigger] = useState(0);
+  // increment this key to force AudioPlayerBar re-init if needed
+  const [playerKey, setPlayerKey] = useState(0);
 
   const {
     resumeReadingEnabled,
@@ -124,50 +133,44 @@ export function SurahReaderStructured({
   }, [surahNumber, startAtTop, resumeReadingEnabled]);
 
   useEffect(() => {
-    if (mode === "reading") {
-      setIsCentered(Boolean(centeredReading));
-    } else {
-      setIsCentered(false);
-    }
+    setIsCentered(mode === "reading" ? Boolean(centeredReading) : false);
   }, [mode, centeredReading]);
 
-  const observer = new IntersectionObserver(
-    (entries) => {
-      const vis = entries
-        .filter((e) => e.isIntersecting)
-        .map((e) => {
-          const id = e.target.getAttribute("data-ayah");
-          const rect = e.target.getBoundingClientRect();
-          const viewport = Math.max(1, window.innerHeight);
-          const visible =
-            Math.max(
-              0,
-              Math.min(rect.bottom, viewport) - Math.max(rect.top, 0)
-            ) / Math.max(1, rect.height);
-          return { id: Number(id), visible };
-        })
-        .sort((a, b) => b.visible - a.visible)[0];
-      if (vis && vis.id && vis.visible > 0.3) {
-        currentAyahRef.current = vis.id;
-        saveProgress(surahNumber, vis.id);
-      }
-    },
-    { rootMargin: "0px 0px -50% 0px", threshold: [0.25, 0.5, 0.75] }
-  );
-
+  // Intersection Observer to update reading progress
   useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const vis = entries
+          .filter((e) => e.isIntersecting)
+          .map((e) => {
+            const id = e.target.getAttribute("data-ayah");
+            const rect = e.target.getBoundingClientRect();
+            const viewport = Math.max(1, window.innerHeight);
+            const visible =
+              Math.max(0, Math.min(rect.bottom, viewport) - Math.max(rect.top, 0)) /
+              Math.max(1, rect.height);
+            return { id: Number(id), visible };
+          })
+          .sort((a, b) => b.visible - a.visible)[0];
+        if (vis && vis.id && vis.visible > 0.3) {
+          currentAyahRef.current = vis.id;
+          saveProgress(surahNumber, vis.id);
+        }
+      },
+      { rootMargin: "0px 0px -50% 0px", threshold: [0.25, 0.5, 0.75] }
+    );
+
     for (const a of data) {
       const el = ayahRefs.current[a.number];
       if (el) observer.observe(el);
     }
+
     return () => observer.disconnect();
-  }, [data]);
+  }, [data, surahNumber]);
 
   const scrollToAyah = useCallback((n: number) => {
     const el = ayahRefs.current[n];
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
   }, []);
 
   const handleJumpPrev = () => {
@@ -184,31 +187,7 @@ export function SurahReaderStructured({
     saveProgress(surahNumber, currentAyahRef.current);
   };
 
-  // const audioItems = useMemo(
-  //   () =>
-  //     data
-  //       .filter((a) => typeof a.global === "number")
-  //       .map((a) => ({
-  //         id: String(a.global),
-  //         title: `Ayah ${a.number}`,
-  //         // url: `https://cdn.islamic.network/quran/audio/64/ar.alafasy/${a.global}.mp3`,
-  //         url: `https://cdn.islamic.network/quran/audio/128/ar.alafasy/${a.global}.mp3`,
-  //         ayahLabel: `${surahNumber}:${a.number}`,
-  //       })),
-  //   [data, surahNumber]
-  // );
-
-//   const audioItems = useMemo(
-//   () =>
-//     data.map((a, index) => ({
-//       id: String(a.global ?? index + 1),
-//       title: `Ayah ${a.number}`,
-//       url: `https://cdn.islamic.network/quran/audio/128/ar.alafasy/1.mp3`,
-//       ayahLabel: `${surahNumber}:${a.number}`,
-//     })),
-//   [data, surahNumber]
-// );
-
+  // audio items (list)
   const audioItems = useMemo(
     () =>
       data
@@ -223,99 +202,102 @@ export function SurahReaderStructured({
     [data, surahNumber]
   );
 
-  // Drive bottom AudioPlayerBar
-  const [audioPlayIndex, setAudioPlayIndex] = useState<number | null>(null);
-  const [playTrigger, setPlayTrigger] = useState(0);
-
-  // Removed bottom AudioPlayerBar; using inline audio controls instead
-
-  // Reset audio when surah changes
+  // cleanup when surah changes or unmount
   useEffect(() => {
-    setIsPlaying(false);
-    // Clean up audio when surah changes
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
-    }
-    currentIndexRef.current = 0;
-    playNextRef.current = null;
-  }, [surahNumber]);
-  
-  // Clean up audio on unmount
-  useEffect(() => {
+    // when surah changes, stop audio and reset
     return () => {
       if (audioRef.current) {
-        audioRef.current.pause();
+        try {
+          audioRef.current.pause();
+        } catch {
+          console.log('err')
+        }
+        audioRef.current = null;
+      }
+      currentIndexRef.current = 0;
+      nextHandlerRef.current = null;
+      setIsPlaying(false);
+    };
+  }, [surahNumber]);
+
+  useEffect(() => {
+    // unmount cleanup
+    return () => {
+      if (audioRef.current) {
+        try {
+          audioRef.current.pause();
+        } catch {
+          console.log('err')
+        }
         audioRef.current = null;
       }
     };
   }, []);
 
-  const playAllAyahs = () => {
-    if (!audioItems || audioItems.length === 0) return;
-    
-    // If already playing, pause it
-    if (isPlaying && audioRef.current) {
-      pauseAudio();
-      return;
-    }
-    
-    // If paused, resume from current position
-    if (audioRef.current && !isPlaying) {
-      resumeAudio();
-      return;
-    }
-    
-    // Start fresh playback
-    currentIndexRef.current = 0;
-    
-    // Clean up existing audio if any
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
-    }
-    
-    // Create new audio instance
-    const audio = new Audio(audioItems[currentIndexRef.current].url);
-    audioRef.current = audio;
-    
-    const playNext = () => {
+  // internal helper to attach next handler
+  const attachNextHandler = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    const handler = () => {
       currentIndexRef.current++;
       if (currentIndexRef.current < audioItems.length) {
         audio.src = audioItems[currentIndexRef.current].url;
-        audio.play().catch((err) => {
-          console.error("Audio play error:", err);
+        // update UI player index so AudioPlayerBar can reflect it
+        setAudioPlayIndex(currentIndexRef.current);
+        try {
+          audio.play().catch((err) => {
+            console.error("play error after ended:", err);
+            setIsPlaying(false);
+          });
+        } catch (err) {
+          console.error(err);
           setIsPlaying(false);
-        });
+        }
       } else {
-        // Reached the end
+        // finished
         setIsPlaying(false);
       }
     };
-    
-    playNextRef.current = playNext;
-    audio.addEventListener("ended", playNext);
-    
-    audio.play()
-      .then(() => {
-        setIsPlaying(true);
-      })
-      .catch((err) => {
-        console.error("Audio play error:", err);
-        setIsPlaying(false);
-      });
-  };
-
-  const pauseAudio = () => {
-    if (audioRef.current && isPlaying) {
-      audioRef.current.pause();
-      setIsPlaying(false);
+    // remove previous if any
+    if (nextHandlerRef.current) {
+      try {
+        audio.removeEventListener("ended", nextHandlerRef.current);
+      } catch {
+        console.log('err')
+      }
     }
-  };
+    nextHandlerRef.current = handler;
+    audio.addEventListener("ended", handler);
+  }, [audioItems]);
 
-  const resumeAudio = () => {
-    if (audioRef.current && !isPlaying) {
-      audioRef.current.play()
+  // start playing from a given index (and continue)
+  const startPlaybackFromIndex = useCallback(
+    (startIndex: number) => {
+      if (!audioItems || audioItems.length === 0) return;
+      if (startIndex < 0 || startIndex >= audioItems.length) return;
+
+      // stop existing audio
+      if (audioRef.current) {
+        try {
+          audioRef.current.pause();
+        } catch {
+          console.log('err')
+        }
+        audioRef.current = null;
+      }
+
+      currentIndexRef.current = startIndex;
+      const a = new Audio(audioItems[currentIndexRef.current].url);
+      audioRef.current = a;
+
+      // update player UI state
+      setAudioPlayIndex(currentIndexRef.current);
+      setPlayerKey((k) => k + 1);
+      setPlayTrigger((t) => t + 1);
+
+      attachNextHandler();
+
+      a.play()
         .then(() => {
           setIsPlaying(true);
         })
@@ -323,67 +305,86 @@ export function SurahReaderStructured({
           console.error("Audio play error:", err);
           setIsPlaying(false);
         });
+    },
+    [audioItems, attachNextHandler]
+  );
+
+  // top Play / Pause behavior: toggles
+  const handlePlayPauseToggle = () => {
+    if (isPlaying) {
+      // pause
+      if (audioRef.current) {
+        try {
+          audioRef.current.pause();
+        } catch {
+          console.log('err')
+        }
+      }
+      setIsPlaying(false);
+      return;
+    }
+
+    // not playing now
+    // if an audio instance exists and is paused -> resume
+    if (audioRef.current) {
+      try {
+        audioRef.current
+          .play()
+          .then(() => setIsPlaying(true))
+          .catch((err) => {
+            console.error("resume play error:", err);
+            setIsPlaying(false);
+          });
+        return;
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    // otherwise start from first ayah
+    if (audioItems.length > 0) {
+      startPlaybackFromIndex(0);
     }
   };
 
-  const playSpecificAyah = (ayahNumber: number) => {
-    if (!audioItems || audioItems.length === 0) return;
-    const ayah = data.find((a) => a.number === ayahNumber && typeof a.global === "number");
-    if (ayah && ayah.global) {
-      const index = audioItems.findIndex((item) => item.id === String(ayah.global));
-      if (index >= 0) {
-        // If same ayah is playing, toggle pause/resume
-        if (audioRef.current && currentIndexRef.current === index) {
-          if (isPlaying) {
-            pauseAudio();
-          } else {
-            resumeAudio();
-          }
-          return;
-        }
-        
-        // Set the starting index
-        currentIndexRef.current = index;
-        
-        // Clean up existing audio if any
-        if (audioRef.current) {
-          audioRef.current.pause();
-          audioRef.current = null;
-        }
-        
-        // Create new audio instance starting from this ayah
-        const audio = new Audio(audioItems[currentIndexRef.current].url);
-        audioRef.current = audio;
-        
-        const playNext = () => {
-          currentIndexRef.current++;
-          if (currentIndexRef.current < audioItems.length) {
-            audio.src = audioItems[currentIndexRef.current].url;
-            audio.play().catch((err) => {
-              console.error("Audio play error:", err);
-              setIsPlaying(false);
-            });
-          } else {
-            // Reached the end
-            setIsPlaying(false);
-          }
-        };
-        
-        playNextRef.current = playNext;
-        audio.addEventListener("ended", playNext);
-        
-        audio.play()
-          .then(() => {
-            setIsPlaying(true);
-          })
+  // play a specific ayah (index by ayahNumber)
+  const handlePlaySpecificAyah = (ayahNumber: number) => {
+    // find index in audioItems by ayahNumber
+    const idx = audioItems.findIndex((it) => it.ayahNumber === ayahNumber);
+    if (idx === -1) return;
+    // if same index currently playing -> toggle pause/resume
+    if (audioRef.current && currentIndexRef.current === idx) {
+      if (isPlaying) {
+        audioRef.current.pause();
+        setIsPlaying(false);
+      } else {
+        audioRef.current
+          .play()
+          .then(() => setIsPlaying(true))
           .catch((err) => {
-            console.error("Audio play error:", err);
+            console.error("resume error:", err);
             setIsPlaying(false);
           });
       }
+      return;
     }
+    // else start from that index
+    startPlaybackFromIndex(idx);
   };
 
+  // Optional: when AudioPlayerBar reports index changes, scroll into view
+  const handlePlayerIndexChange = (index: number) => {
+    if (index >= 0 && index < audioItems.length) {
+      const ayahNo = audioItems[index]?.ayahNumber;
+      if (typeof ayahNo === "number") {
+        const el = ayahRefs.current[ayahNo];
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+      // keep internal index in sync when player instructs change
+      currentIndexRef.current = index;
+      setAudioPlayIndex(index);
+    }
+  };
 
   const pages = useMemo(() => {
     const groups = new Map<number, Ayah[]>();
@@ -407,9 +408,7 @@ export function SurahReaderStructured({
             <button
               className={cn(
                 "px-4 py-2 text-sm rounded-full transition-colors inline-flex items-center gap-2",
-                mode === "translation"
-                  ? "bg-background"
-                  : "hover:bg-background/40"
+                mode === "translation" ? "bg-background" : "hover:bg-background/40"
               )}
               onClick={() => {
                 setMode("translation");
@@ -500,38 +499,23 @@ export function SurahReaderStructured({
           >
             • Surah Info
           </Link>
-          {/* <button
-            className="text-sm text-primary hover:text-primary/80"
-            type="button"
-            aria-label="Play audio"
-          >
-            ► Play Audio
-          </button> */}
-          {/* <button
-            className="text-sm text-primary hover:text-primary/80"
+
+          <button
+            className="text-white hover:text-white/80 inline-flex items-center gap-2"
             type="button"
             aria-label={isPlaying ? "Pause audio" : "Play audio"}
-            onClick={playAllAyahs}
+            onClick={handlePlayPauseToggle}
           >
-            {isPlaying ? "⏸ Pause Audio" : "► Play Audio"}
-          </button> */}
-          <button
-  className="text-white hover:text-white/80"
-  type="button"
-  aria-label={isPlaying ? "Pause audio" : "Play audio"}
-  onClick={isPlaying ? pauseAudio : playAllAyahs}
->
-{isPlaying ? (
-  <>
-    <Pause size={15} className="inline mr-1" /> Pause Audio
-  </>
-) : (
-  <>
-    <Play size={15} className="inline mr-1" /> Play Audio
-  </>
-)}
-
-</button>
+            {isPlaying ? (
+              <>
+                <Pause size={15} className="inline" /> Pause Audio
+              </>
+            ) : (
+              <>
+                <Play size={15} className="inline" /> Play Audio
+              </>
+            )}
+          </button>
 
           <button
             className="text-sm text-foreground/80 hover:text-foreground"
@@ -564,29 +548,20 @@ export function SurahReaderStructured({
               <div className="flex items-start gap-3">
                 {mode === "translation" && !isCentered ? (
                   <div className="hidden sm:flex sm:flex-col sm:items-center sm:gap-2 text-foreground/60">
-                    <button
-                      aria-label="Copy ayah"
-                      className="hover:text-foreground"
-                    >
+                    <button aria-label="Copy ayah" className="hover:text-foreground">
                       <Copy className="h-4 w-4" />
                     </button>
-                    <button
-                      aria-label="Bookmark ayah"
-                      className="hover:text-foreground"
-                    >
+                    <button aria-label="Bookmark ayah" className="hover:text-foreground">
                       <Bookmark className="h-4 w-4" />
                     </button>
                     <button
                       aria-label="Play ayah audio"
                       className="hover:text-foreground"
-                      onClick={() => playSpecificAyah(a.number)}
+                      onClick={() => handlePlaySpecificAyah(a.number)}
                     >
                       <Play className="h-4 w-4" />
                     </button>
-                    <button
-                      aria-label="Commentary"
-                      className="hover:text-foreground"
-                    >
+                    <button aria-label="Commentary" className="hover:text-foreground">
                       <MessageCircleMore className="h-4 w-4" />
                     </button>
                     <button aria-label="More" className="hover:text-foreground">
@@ -613,10 +588,7 @@ export function SurahReaderStructured({
                   </div>
 
                   <p
-                    className={cn(
-                      "font-serif leading-relaxed md:leading-loose text-foreground",
-                      isCentered ? "mx-auto" : ""
-                    )}
+                    className={cn("font-serif leading-relaxed md:leading-loose text-foreground", isCentered ? "mx-auto" : "")}
                     dir="rtl"
                     lang="ar"
                     style={{
@@ -631,9 +603,7 @@ export function SurahReaderStructured({
                     <p
                       className="mt-2 md:mt-3 leading-relaxed text-foreground/80"
                       style={{
-                        fontSize: `calc(${
-                          translationFontScale ?? 1
-                        } * 0.95rem)`,
+                        fontSize: `calc(${translationFontScale ?? 1} * 0.95rem)`,
                       }}
                     >
                       {a.translation}
@@ -641,29 +611,20 @@ export function SurahReaderStructured({
                   )}
 
                   <div className="mt-3 flex items-center gap-4 text-foreground/60 sm:hidden">
-                    <button
-                      aria-label="Copy ayah"
-                      className="hover:text-foreground"
-                    >
+                    <button aria-label="Copy ayah" className="hover:text-foreground">
                       <Copy className="h-5 w-5" />
                     </button>
-                    <button
-                      aria-label="Bookmark ayah"
-                      className="hover:text-foreground"
-                    >
+                    <button aria-label="Bookmark ayah" className="hover:text-foreground">
                       <Bookmark className="h-5 w-5" />
                     </button>
                     <button
                       aria-label="Play ayah audio"
                       className="hover:text-foreground"
-                      onClick={() => playSpecificAyah(a.number)}
+                      onClick={() => handlePlaySpecificAyah(a.number)}
                     >
                       <Play className="h-5 w-5" />
                     </button>
-                    <button
-                      aria-label="Commentary"
-                      className="hover:text-foreground"
-                    >
+                    <button aria-label="Commentary" className="hover:text-foreground">
                       <MessageCircleMore className="h-5 w-5" />
                     </button>
                     <button aria-label="More" className="hover:text-foreground">
@@ -680,29 +641,17 @@ export function SurahReaderStructured({
           ))}
         </div>
       ) : (
-
-        // surah ayah structure
+        // surah ayah structure (page layout)
         <div className="mx-auto max-w-3xl px-3 md:px-4 pb-24 md:pb-28">
-
           {pages.map(({ pageNo, ayahs }) => (
-            <section
-              key={pageNo}
-              className="py-6 md:py-8 border-b border-border/60"
-            >
-              <div className="mb-2 md:mb-3 text-center text-xs text-foreground/60">
-                Page {pageNo}
-              </div>
+            <section key={pageNo} className="py-6 md:py-8 border-b border-border/60">
+              <div className="mb-2 md:mb-3 text-center text-xs text-foreground/60">Page {pageNo}</div>
               {mode === "reading" ? (
                 <p
                   dir="rtl"
                   lang="ar"
-                  className={cn(
-                    "mx-auto w-full font-serif leading-relaxed md:leading-loose text-foreground",
-                    isCentered ? "text-center" : "text-left"
-                  )}
-                  style={{
-                    fontSize: `calc(${arabicFontScale ?? 1} * 1.25rem)`,
-                  }}
+                  className={cn("mx-auto w-full font-serif leading-relaxed md:leading-loose text-foreground", isCentered ? "text-center" : "text-left")}
+                  style={{ fontSize: `calc(${arabicFontScale ?? 1} * 1.25rem)` }}
                 >
                   {ayahs.map((a, idx) => (
                     <span key={a.number}>
@@ -716,20 +665,14 @@ export function SurahReaderStructured({
                 <div className="mx-auto max-w-prose text-left">
                   <p
                     className="leading-relaxed text-foreground/85 whitespace-pre-wrap"
-                    style={{
-                      fontSize: `calc(${translationFontScale ?? 1} * 0.95rem)`,
-                    }}
+                    style={{ fontSize: `calc(${translationFontScale ?? 1} * 0.95rem)` }}
                   >
-                    {ayahs
-                      .map((a) => a.translation)
-                      .filter(Boolean)
-                      .join(" ")}
+                    {ayahs.map((a) => a.translation).filter(Boolean).join(" ")}
                   </p>
                 </div>
               )}
             </section>
           ))}
-
         </div>
       )}
 
@@ -751,19 +694,17 @@ export function SurahReaderStructured({
         </button>
       </div>
 
+      {/* AudioPlayerBar - keep it, but pass playIndex/trigger and receive index change events */}
       {audioItems.length > 0 && (
-        <AudioPlayerBar 
-          items={audioItems} 
+        <AudioPlayerBar
+          key={playerKey}
+          items={audioItems}
           showTimeline={false}
-          playIndex={audioPlayIndex} 
-          playTrigger={playTrigger} 
+          // these props are optional — AudioPlayerBar should use them if implemented
+          startIndex={audioPlayIndex ?? undefined}
+          playTrigger={playTrigger}
           onIndexChange={(index: number) => {
-            const item: any = audioItems[index]
-            const ayahNo = item?.ayahNumber
-            if (typeof ayahNo === "number") {
-              const el = ayahRefs.current[ayahNo]
-              if (el) el.scrollIntoView({ behavior: "smooth", block: "center" })
-            }
+            handlePlayerIndexChange(index);
           }}
         />
       )}
@@ -771,16 +712,10 @@ export function SurahReaderStructured({
       {/* Bottom bar */}
       <div className="sticky bottom-0 z-30 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t border-border">
         <div className="mx-auto max-w-3xl px-4 py-3 flex items-center justify-between text-sm">
-          <Link
-            to={`/surah/${Math.max(1, surahNumber - 1)}?start=top`}
-            className="text-foreground hover:text-primary transition-colors"
-          >
+          <Link to={`/surah/${Math.max(1, surahNumber - 1)}?start=top`} className="text-foreground hover:text-primary transition-colors">
             ← Previous Surah
           </Link>
-          <Link
-            to={`/surah/${Math.min(114, surahNumber + 1)}?start=top`}
-            className="text-foreground hover:text-primary transition-colors"
-          >
+          <Link to={`/surah/${Math.min(114, surahNumber + 1)}?start=top`} className="text-foreground hover:text-primary transition-colors">
             Next Surah →
           </Link>
         </div>
@@ -790,3 +725,6 @@ export function SurahReaderStructured({
 }
 
 export default SurahReaderStructured;
+
+
+
