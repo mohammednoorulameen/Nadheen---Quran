@@ -15,11 +15,17 @@ export type AudioItem = {
 export default function AudioPlayerBar({
   items,
   startIndex = 0,
-  showTimeline = false,
+  showTimeline = true,
+  playIndex,
+  playTrigger,
+  onIndexChange,
 }: {
   items: AudioItem[]
   startIndex?: number
   showTimeline?: boolean
+  playIndex?: number | null
+  playTrigger?: number
+  onIndexChange?: (index: number) => void
 }) {
   const [idx, setIdx] = useState(startIndex)
   const [playing, setPlaying] = useState(false)
@@ -27,33 +33,119 @@ export default function AudioPlayerBar({
   const [dur, setDur] = useState(0)
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
+  // Initialize audio element
   useEffect(() => {
     if (!audioRef.current) {
       audioRef.current = new Audio()
       audioRef.current.crossOrigin = "anonymous"
     }
     const a = audioRef.current
-    const onTime = () => setTime(a!.currentTime || 0)
-    const onLoaded = () => setDur(a!.duration || 0)
-    const onEnded = () => next()
-    a!.addEventListener("timeupdate", onTime)
-    a!.addEventListener("loadedmetadata", onLoaded)
-    a!.addEventListener("ended", onEnded)
-    return () => {
-      a!.removeEventListener("timeupdate", onTime)
-      a!.removeEventListener("loadedmetadata", onLoaded)
-      a!.removeEventListener("ended", onEnded)
+    
+    const onTime = () => setTime(a.currentTime || 0)
+    const onLoaded = () => setDur(a.duration || 0)
+    
+    // Handle when audio ends - play next track (simple approach like user's working code)
+    const onEnded = () => {
+      setIdx((p) => {
+        const nextIdx = Math.min(items.length - 1, p + 1)
+        if (nextIdx === p) {
+          // Reached the end
+          setPlaying(false)
+        } else {
+          // Play next track - simple approach
+          const nextItem = items[nextIdx]
+          if (nextItem?.url) {
+            a.src = nextItem.url
+            a.play().catch((err) => {
+              console.error("Audio play error:", err)
+              setPlaying(false)
+            })
+          }
+        }
+        return nextIdx
+      })
     }
-  }, [])
+    
+    a.addEventListener("timeupdate", onTime)
+    a.addEventListener("loadedmetadata", onLoaded)
+    a.addEventListener("ended", onEnded)
+    
+    return () => {
+      a.removeEventListener("timeupdate", onTime)
+      a.removeEventListener("loadedmetadata", onLoaded)
+      a.removeEventListener("ended", onEnded)
+    }
+  }, [items])
+
+  // Handle external playIndex control
+  useEffect(() => {
+    if (playIndex !== undefined && playIndex !== null && playIndex >= 0 && playIndex < items.length) {
+      const a = audioRef.current
+      if (a && items[playIndex]?.url) {
+        setIdx(playIndex)
+        a.src = items[playIndex].url
+        a.play()
+          .then(() => setPlaying(true))
+          .catch((err) => {
+            console.error("Audio play error:", err)
+            setPlaying(false)
+          })
+      }
+    }
+  }, [playIndex, playTrigger, items])
 
   const current = items[idx]
+  
+  // Notify parent when index changes
+  useEffect(() => {
+    try {
+      onIndexChange && onIndexChange(idx)
+    } catch {}
+  }, [idx, onIndexChange])
+  
+  // Update audio source when index changes (for manual navigation)
   useEffect(() => {
     const a = audioRef.current
     if (!a || !current?.url) return
-    a.src = current.url
-    setTime(0)
-    if (playing) a.play().catch(() => setPlaying(false))
-  }, [idx, current?.url])
+    
+    if (a.src !== current.url) {
+      a.src = current.url
+      setTime(0)
+      // Auto-play if we're already playing
+      if (playing) {
+        a.play().catch((err) => {
+          console.error("Audio play error:", err)
+          setPlaying(false)
+        })
+      }
+    }
+  }, [idx, current?.url, playing])
+  
+  // Handle playing/pausing
+  useEffect(() => {
+    const a = audioRef.current
+    if (!a || !current?.url) return
+    
+    if (playing) {
+      if (a.src === current.url) {
+        // Source matches, play
+        a.play().catch((err) => {
+          console.error("Audio play error:", err)
+          setPlaying(false)
+        })
+      }
+    } else {
+      a.pause()
+    }
+  }, [playing, current?.url])
+
+  const next = () => {
+    setIdx((p) => {
+      const nextIdx = Math.min(items.length - 1, p + 1)
+      return nextIdx
+    })
+    setPlaying(true)
+  }
 
   const toggle = () => {
     const a = audioRef.current
@@ -73,8 +165,10 @@ export default function AudioPlayerBar({
     a.currentTime = v[0]
     setTime(v[0])
   }
-  const prev = () => setIdx((p) => Math.max(0, p - 1))
-  const next = () => setIdx((p) => Math.min(items.length - 1, p + 1))
+  const prev = () => {
+    setIdx((p) => Math.max(0, p - 1))
+    setPlaying(true)
+  }
 
   if (!items || items.length === 0) return null
 

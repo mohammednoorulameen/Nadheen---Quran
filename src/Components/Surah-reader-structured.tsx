@@ -12,6 +12,7 @@ import {
   LinkIcon,
   List,
   Columns3,
+  Pause,
 } from "lucide-react";
 import AudioPlayerBar from "@/Components/Audio-player-bar";
 import { useUserSettings } from "@/Hook/useUserSettings";
@@ -88,6 +89,10 @@ export function SurahReaderStructured({
 
   const ayahRefs = useRef<Record<number, HTMLDivElement | null>>({});
   const currentAyahRef = useRef<number>(1);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const currentIndexRef = useRef<number>(0);
+  const playNextRef = useRef<(() => void) | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   const {
     resumeReadingEnabled,
@@ -204,37 +209,180 @@ export function SurahReaderStructured({
 //   [data, surahNumber]
 // );
 
-const audioItems = useMemo(
-  () =>
-    data.map((a) => ({
-      id: String(a.global),
-      title: `Ayah ${a.number}`,
-      url: `https://cdn.islamic.network/quran/audio/128/ar.alafasy/${a.global}.mp3`,
-      ayahLabel: `${surahNumber}:${a.number}`,
-    })),
-  [data, surahNumber]
-);
+  const audioItems = useMemo(
+    () =>
+      data
+        .filter((a) => typeof a.global === "number")
+        .map((a) => ({
+          id: String(a.global),
+          title: `Ayah ${a.number}`,
+          url: `https://cdn.islamic.network/quran/audio/128/ar.alafasy/${a.global}.mp3`,
+          ayahLabel: `${surahNumber}:${a.number}`,
+          ayahNumber: a.number,
+        })),
+    [data, surahNumber]
+  );
 
-const playAllAyahs = () => {
-  if (!audioItems || audioItems.length === 0) return;
+  // Drive bottom AudioPlayerBar
+  const [audioPlayIndex, setAudioPlayIndex] = useState<number | null>(null);
+  const [playTrigger, setPlayTrigger] = useState(0);
 
-  let currentIndex = 0;
-  const audio = new Audio(audioItems[currentIndex].url);
+  // Removed bottom AudioPlayerBar; using inline audio controls instead
 
-  const playNext = () => {
-    currentIndex++;
-    if (currentIndex < audioItems.length) {
-      audio.src = audioItems[currentIndex].url;
-      audio.play();
+  // Reset audio when surah changes
+  useEffect(() => {
+    setIsPlaying(false);
+    // Clean up audio when surah changes
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    currentIndexRef.current = 0;
+    playNextRef.current = null;
+  }, [surahNumber]);
+  
+  // Clean up audio on unmount
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
+
+  const playAllAyahs = () => {
+    if (!audioItems || audioItems.length === 0) return;
+    
+    // If already playing, pause it
+    if (isPlaying && audioRef.current) {
+      pauseAudio();
+      return;
+    }
+    
+    // If paused, resume from current position
+    if (audioRef.current && !isPlaying) {
+      resumeAudio();
+      return;
+    }
+    
+    // Start fresh playback
+    currentIndexRef.current = 0;
+    
+    // Clean up existing audio if any
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    
+    // Create new audio instance
+    const audio = new Audio(audioItems[currentIndexRef.current].url);
+    audioRef.current = audio;
+    
+    const playNext = () => {
+      currentIndexRef.current++;
+      if (currentIndexRef.current < audioItems.length) {
+        audio.src = audioItems[currentIndexRef.current].url;
+        audio.play().catch((err) => {
+          console.error("Audio play error:", err);
+          setIsPlaying(false);
+        });
+      } else {
+        // Reached the end
+        setIsPlaying(false);
+      }
+    };
+    
+    playNextRef.current = playNext;
+    audio.addEventListener("ended", playNext);
+    
+    audio.play()
+      .then(() => {
+        setIsPlaying(true);
+      })
+      .catch((err) => {
+        console.error("Audio play error:", err);
+        setIsPlaying(false);
+      });
+  };
+
+  const pauseAudio = () => {
+    if (audioRef.current && isPlaying) {
+      audioRef.current.pause();
+      setIsPlaying(false);
     }
   };
 
-  audio.addEventListener("ended", playNext);
-  audio.play();
-};
+  const resumeAudio = () => {
+    if (audioRef.current && !isPlaying) {
+      audioRef.current.play()
+        .then(() => {
+          setIsPlaying(true);
+        })
+        .catch((err) => {
+          console.error("Audio play error:", err);
+          setIsPlaying(false);
+        });
+    }
+  };
 
-
-
+  const playSpecificAyah = (ayahNumber: number) => {
+    if (!audioItems || audioItems.length === 0) return;
+    const ayah = data.find((a) => a.number === ayahNumber && typeof a.global === "number");
+    if (ayah && ayah.global) {
+      const index = audioItems.findIndex((item) => item.id === String(ayah.global));
+      if (index >= 0) {
+        // If same ayah is playing, toggle pause/resume
+        if (audioRef.current && currentIndexRef.current === index) {
+          if (isPlaying) {
+            pauseAudio();
+          } else {
+            resumeAudio();
+          }
+          return;
+        }
+        
+        // Set the starting index
+        currentIndexRef.current = index;
+        
+        // Clean up existing audio if any
+        if (audioRef.current) {
+          audioRef.current.pause();
+          audioRef.current = null;
+        }
+        
+        // Create new audio instance starting from this ayah
+        const audio = new Audio(audioItems[currentIndexRef.current].url);
+        audioRef.current = audio;
+        
+        const playNext = () => {
+          currentIndexRef.current++;
+          if (currentIndexRef.current < audioItems.length) {
+            audio.src = audioItems[currentIndexRef.current].url;
+            audio.play().catch((err) => {
+              console.error("Audio play error:", err);
+              setIsPlaying(false);
+            });
+          } else {
+            // Reached the end
+            setIsPlaying(false);
+          }
+        };
+        
+        playNextRef.current = playNext;
+        audio.addEventListener("ended", playNext);
+        
+        audio.play()
+          .then(() => {
+            setIsPlaying(true);
+          })
+          .catch((err) => {
+            console.error("Audio play error:", err);
+            setIsPlaying(false);
+          });
+      }
+    }
+  };
 
 
   const pages = useMemo(() => {
@@ -359,14 +507,30 @@ const playAllAyahs = () => {
           >
             ► Play Audio
           </button> */}
+          {/* <button
+            className="text-sm text-primary hover:text-primary/80"
+            type="button"
+            aria-label={isPlaying ? "Pause audio" : "Play audio"}
+            onClick={playAllAyahs}
+          >
+            {isPlaying ? "⏸ Pause Audio" : "► Play Audio"}
+          </button> */}
           <button
-  className="text-sm text-primary hover:text-primary/80"
+  className="text-white hover:text-white/80"
   type="button"
-  aria-label="Play audio"
- 
-  onClick={playAllAyahs}
+  aria-label={isPlaying ? "Pause audio" : "Play audio"}
+  onClick={isPlaying ? pauseAudio : playAllAyahs}
 >
-  ► Play Audio
+{isPlaying ? (
+  <>
+    <Pause size={15} className="inline mr-1" /> Pause Audio
+  </>
+) : (
+  <>
+    <Play size={15} className="inline mr-1" /> Play Audio
+  </>
+)}
+
 </button>
 
           <button
@@ -415,6 +579,7 @@ const playAllAyahs = () => {
                     <button
                       aria-label="Play ayah audio"
                       className="hover:text-foreground"
+                      onClick={() => playSpecificAyah(a.number)}
                     >
                       <Play className="h-4 w-4" />
                     </button>
@@ -491,6 +656,7 @@ const playAllAyahs = () => {
                     <button
                       aria-label="Play ayah audio"
                       className="hover:text-foreground"
+                      onClick={() => playSpecificAyah(a.number)}
                     >
                       <Play className="h-5 w-5" />
                     </button>
@@ -585,9 +751,22 @@ const playAllAyahs = () => {
         </button>
       </div>
 
-      {audioItems.length > 0 ? (
-        <AudioPlayerBar items={audioItems} showTimeline={false} />
-      ) : null}
+      {audioItems.length > 0 && (
+        <AudioPlayerBar 
+          items={audioItems} 
+          showTimeline={false}
+          playIndex={audioPlayIndex} 
+          playTrigger={playTrigger} 
+          onIndexChange={(index: number) => {
+            const item: any = audioItems[index]
+            const ayahNo = item?.ayahNumber
+            if (typeof ayahNo === "number") {
+              const el = ayahRefs.current[ayahNo]
+              if (el) el.scrollIntoView({ behavior: "smooth", block: "center" })
+            }
+          }}
+        />
+      )}
 
       {/* Bottom bar */}
       <div className="sticky bottom-0 z-30 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t border-border">
