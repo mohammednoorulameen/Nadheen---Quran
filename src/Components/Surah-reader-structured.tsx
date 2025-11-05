@@ -179,18 +179,63 @@ export function SurahReaderStructured({
     saveProgress(surahNumber, currentAyahRef.current);
   };
 
-  const audioItems = useMemo(
-    () =>
-      data
-        .filter((a) => typeof a.global === "number")
-        .map((a) => ({
-          id: String(a.global),
-          title: `Ayah ${a.number}`,
-          url: `https://cdn.islamic.network/quran/audio/64/ar.alafasy/${a.global}.mp3`,
-          ayahLabel: `${surahNumber}:${a.number}`,
-        })),
-    [data, surahNumber]
-  );
+  // const audioItems = useMemo(
+  //   () =>
+  //     data
+  //       .filter((a) => typeof a.global === "number")
+  //       .map((a) => ({
+  //         id: String(a.global),
+  //         title: `Ayah ${a.number}`,
+  //         // url: `https://cdn.islamic.network/quran/audio/64/ar.alafasy/${a.global}.mp3`,
+  //         url: `https://cdn.islamic.network/quran/audio/128/ar.alafasy/${a.global}.mp3`,
+  //         ayahLabel: `${surahNumber}:${a.number}`,
+  //       })),
+  //   [data, surahNumber]
+  // );
+
+//   const audioItems = useMemo(
+//   () =>
+//     data.map((a, index) => ({
+//       id: String(a.global ?? index + 1),
+//       title: `Ayah ${a.number}`,
+//       url: `https://cdn.islamic.network/quran/audio/128/ar.alafasy/1.mp3`,
+//       ayahLabel: `${surahNumber}:${a.number}`,
+//     })),
+//   [data, surahNumber]
+// );
+
+const audioItems = useMemo(
+  () =>
+    data.map((a) => ({
+      id: String(a.global),
+      title: `Ayah ${a.number}`,
+      url: `https://cdn.islamic.network/quran/audio/128/ar.alafasy/${a.global}.mp3`,
+      ayahLabel: `${surahNumber}:${a.number}`,
+    })),
+  [data, surahNumber]
+);
+
+const playAllAyahs = () => {
+  if (!audioItems || audioItems.length === 0) return;
+
+  let currentIndex = 0;
+  const audio = new Audio(audioItems[currentIndex].url);
+
+  const playNext = () => {
+    currentIndex++;
+    if (currentIndex < audioItems.length) {
+      audio.src = audioItems[currentIndex].url;
+      audio.play();
+    }
+  };
+
+  audio.addEventListener("ended", playNext);
+  audio.play();
+};
+
+
+
+
 
   const pages = useMemo(() => {
     const groups = new Map<number, Ayah[]>();
@@ -283,7 +328,6 @@ export function SurahReaderStructured({
       {/* Title + basmala + actions */}
       <div className="mx-auto max-w-3xl px-4 pt-8 text-center">
         <h1 className="font-serif text-2xl tracking-wide text-foreground text-pretty">
-          {"سُورَةُ "}
           {surahName}
         </h1>
         <p className="mt-6 font-serif text-xl text-foreground/90">
@@ -308,13 +352,23 @@ export function SurahReaderStructured({
           >
             • Surah Info
           </Link>
-          <button
+          {/* <button
             className="text-sm text-primary hover:text-primary/80"
             type="button"
             aria-label="Play audio"
           >
             ► Play Audio
-          </button>
+          </button> */}
+          <button
+  className="text-sm text-primary hover:text-primary/80"
+  type="button"
+  aria-label="Play audio"
+ 
+  onClick={playAllAyahs}
+>
+  ► Play Audio
+</button>
+
           <button
             className="text-sm text-foreground/80 hover:text-foreground"
             type="button"
@@ -460,7 +514,10 @@ export function SurahReaderStructured({
           ))}
         </div>
       ) : (
+
+        // surah ayah structure
         <div className="mx-auto max-w-3xl px-3 md:px-4 pb-24 md:pb-28">
+
           {pages.map(({ pageNo, ayahs }) => (
             <section
               key={pageNo}
@@ -506,6 +563,7 @@ export function SurahReaderStructured({
               )}
             </section>
           ))}
+
         </div>
       )}
 
