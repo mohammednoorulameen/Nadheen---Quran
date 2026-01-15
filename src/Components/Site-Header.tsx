@@ -1,13 +1,14 @@
 import { Button } from "@/Components/ui/button";
-import { Menu } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
-
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/Hook/useSidebar";
+import { Menu, Moon, Sun } from "lucide-react"
+import { useTheme } from "@/Hook/useTheme";
 
 export function SiteHeader() {
   const { toggle, isOpen } = useSidebar();
   const location = useLocation();
+    const { theme, toggleTheme } = useTheme()
 
   return (
     <header
@@ -109,6 +110,18 @@ export function SiteHeader() {
           >
             Settings
           </Link>
+             {/* Dark mode toggle */}
+          <button
+            onClick={toggleTheme}
+            aria-label="Toggle theme"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-card hover:bg-accent"
+          >
+            {theme === "dark" ? (
+              <Sun className="h-4 w-4" />
+            ) : (
+              <Moon className="h-4 w-4" />
+            )}
+          </button>
           <Button
             asChild
             size="sm"
