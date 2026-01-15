@@ -1,7 +1,8 @@
-import { ReactNode, useEffect } from "react"
+import type { ReactNode } from "react"
+import { useEffect } from "react"
 import { SiteHeader } from "./Site-Header"
 import { Sidebar } from "./Sidebar"
-import { useSidebar } from "@/Context/SidebarContext"
+import { useSidebar } from "@/Hook/useSidebar"
 import { cn } from "@/lib/utils"
 
 interface AppShellProps {
@@ -15,8 +16,10 @@ export function AppShell({ children }: AppShellProps) {
   useEffect(() => {
     if (!isMobile || !isOpen) return
 
-    const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as HTMLElement
+    const handleClickOutside = (event: Event) => {
+      const target = event.target as HTMLElement | null
+      if (!target) return
+
       // Don't close if clicking inside sidebar or header menu button
       if (
         target.closest("aside") ||
