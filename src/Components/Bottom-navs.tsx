@@ -41,8 +41,8 @@ export default function BottomNav() {
       const delta = y - lastY.current
       lastY.current = y
 
-      // Ignore tiny scrolls to avoid jitter
-      if (Math.abs(delta) < 12) return
+      // Ignore very tiny scrolls to avoid jitter, but keep it responsive
+      if (Math.abs(delta) < 6) return
 
       if (delta > 0) {
         // scrolling down → hide
@@ -86,7 +86,8 @@ export default function BottomNav() {
       aria-label="Bottom Navigation"
       className={cn(
         "md:hidden fixed left-0 right-0 bottom-0 z-50",
-        "transition-all duration-300 ease-out will-change-transform",
+        // Smooth hide/show using transform, optimized for GPU
+        "transition-transform duration-300 ease-out will-change-transform",
         hidden
           ? "translate-y-full opacity-0"
           : "translate-y-0 opacity-100"
