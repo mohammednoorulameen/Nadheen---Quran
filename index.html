@@ -5,6 +5,35 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>client</title>
+    <script>
+      // Prevent flash of light mode on page load
+      // This script runs synchronously before the page renders
+      (function() {
+        const theme = localStorage.getItem('theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const isDark = theme === 'dark' || (!theme && prefersDark);
+        
+        if (isDark) {
+          document.documentElement.classList.add('dark');
+          if (!theme) {
+            localStorage.setItem('theme', 'dark');
+          }
+        }
+      })();
+    </script>
+    <style>
+      /* Prevent flash by setting background immediately */
+      html {
+        background-color: oklch(1 0 0); /* light background */
+      }
+      html.dark {
+        background-color: oklch(0.145 0 0); /* dark background */
+      }
+      body {
+        background-color: inherit;
+        transition: background-color 0.2s ease;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>

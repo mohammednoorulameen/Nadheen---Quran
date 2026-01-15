@@ -4,18 +4,15 @@ import { AppShell } from "@/Components/AppShell"
 import { SidebarProvider } from "@/Context/SidebarProvider"
 import { Analytics } from "@vercel/analytics/react"
 
-
 export default function LayoutPage() {
   return (
-    <>
-     <SidebarProvider>
+    <SidebarProvider>
       <ScrollProgress />
       <AppShell>
         <Outlet />
       </AppShell>
       <Analytics />
-     </SidebarProvider>
-    </>
+    </SidebarProvider>
   )
 }
 

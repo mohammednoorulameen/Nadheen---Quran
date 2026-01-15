@@ -45,45 +45,46 @@ export function AppShell({ children }: AppShellProps) {
   }, [isMobile, isOpen, close])
 
   return (
-     <>
-
+    <>
       {loading && <PageLoader />}
 
+      <div className="flex h-screen overflow-hidden bg-background">
+        {/* Sidebar */}
+        <Sidebar />
 
-    <div className="flex h-screen overflow-hidden bg-background">
-      {/* Sidebar */}
-      <Sidebar />
+        {/* Mobile overlay */}
+        {isMobile && isOpen && (
+          <div
+            className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm transition-opacity duration-300"
+            onClick={close}
+            onTouchStart={close}
+            aria-hidden="true"
+            role="presentation"
+          />
+        )}
 
-      {/* Mobile overlay */}
-      {isMobile && isOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
-          onClick={close}
-        />
-      )}
+        {/* Main area */}
+        <div className="flex flex-1 flex-col overflow-hidden min-w-0">
+          {/* Header */}
+          <SiteHeader />
 
-      {/* Main area */}
-      <div className="flex flex-1 flex-col overflow-hidden min-w-0">
-        {/* Header */}
-        <SiteHeader />
+          {/* Scroll container */}
+          <main
+            ref={mainRef}
+            className={cn(
+              "flex-1 overflow-y-auto overflow-x-hidden bg-background",
+              "pb-16 md:pb-0"
+            )}
+            role="main"
+          >
+            {children}
+          </main>
 
-        {/* SCROLL CONTAINER */}
-        <main
-          ref={mainRef}
-          className={cn(
-            "flex-1 overflow-y-auto overflow-x-hidden bg-background",
-            "pb-16 md:pb-0"
-          )}
-          role="main"
-        >
-          {children}
-        </main>
-
-        {/* FIXED UI (NOT INSIDE MAIN) */}
-        <BottomNav scrollContainerRef={mainRef} />
+          {/* Bottom Navigation */}
+          <BottomNav scrollContainerRef={mainRef} />
+        </div>
       </div>
-    </div>
-     </>
+    </>
   )
 }
 

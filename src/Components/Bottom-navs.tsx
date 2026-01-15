@@ -1,12 +1,9 @@
 import { Link, useLocation } from "react-router-dom"
 import { useEffect, useRef, useState } from "react"
-import type { RefObject } from "react";
+import type { RefObject } from "react"
 import { Home, BookOpen, Search, Timer, Settings } from "lucide-react"
 import { useUserSettings } from "@/Hook/useUserSettings"
-
-function cn(...c: Array<string | false | null | undefined>) {
-  return c.filter(Boolean).join(" ")
-}
+import { cn } from "@/lib/utils"
 
 interface BottomNavProps {
   scrollContainerRef: RefObject<HTMLElement>
@@ -23,18 +20,25 @@ export default function BottomNav({ scrollContainerRef }: BottomNavProps) {
 
   useEffect(() => {
     const container = scrollContainerRef.current
-    if (!container || !bottomNavAutoHide) return
+    if (!container || !bottomNavAutoHide) {
+      setHidden(false)
+      return
+    }
 
     const onScroll = () => {
       const currentY = container.scrollTop
       const delta = currentY - lastY.current
       lastY.current = currentY
 
+      // Ignore tiny scrolls to avoid jitter
       if (Math.abs(delta) < 8) return
 
-      // 👇 SCROLL DOWN → HIDE | SCROLL UP → SHOW
+      // Scroll down → hide | Scroll up → show
       setHidden(delta > 0)
     }
+
+    // Reset scroll position when container changes
+    lastY.current = container.scrollTop
 
     container.addEventListener("scroll", onScroll, { passive: true })
 
@@ -52,6 +56,7 @@ export default function BottomNav({ scrollContainerRef }: BottomNavProps) {
 
   return (
     <nav
+      aria-label="Bottom Navigation"
       className={cn(
         "md:hidden fixed left-0 right-0 bottom-0 z-50",
         "transition-transform duration-300 ease-out",
@@ -59,7 +64,7 @@ export default function BottomNav({ scrollContainerRef }: BottomNavProps) {
       )}
     >
       <div className="mx-auto max-w-screen-sm px-3 pb-2">
-        <div className="rounded-2xl border bg-background shadow-lg">
+        <div className="rounded-2xl border bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-lg">
           <ul className="grid grid-cols-5">
             {items.map(({ href, label, icon: Icon }) => {
               const active = pathname === href
@@ -68,14 +73,15 @@ export default function BottomNav({ scrollContainerRef }: BottomNavProps) {
                   <Link
                     to={href}
                     className={cn(
-                      "flex h-14 flex-col items-center justify-center text-xs",
+                      "flex h-14 flex-col items-center justify-center gap-1 text-xs transition-colors",
                       active
                         ? "text-primary"
-                        : "text-muted-foreground"
+                        : "text-muted-foreground hover:text-foreground"
                     )}
+                    aria-current={active ? "page" : undefined}
                   >
-                    <Icon className="h-5 w-5" />
-                    {label}
+                    <Icon className="h-5 w-5" aria-hidden="true" />
+                    <span className="leading-none">{label}</span>
                   </Link>
                 </li>
               )
@@ -83,10 +89,11 @@ export default function BottomNav({ scrollContainerRef }: BottomNavProps) {
             <li>
               <Link
                 to="/settings"
-                className="flex h-14 flex-col items-center justify-center text-xs text-muted-foreground"
+                className="flex h-14 flex-col items-center justify-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+                aria-label="Open Settings"
               >
-                <Settings className="h-5 w-5" />
-                Settings
+                <Settings className="h-5 w-5" aria-hidden="true" />
+                <span className="leading-none">Settings</span>
               </Link>
             </li>
           </ul>

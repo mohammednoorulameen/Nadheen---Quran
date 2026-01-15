@@ -46,13 +46,13 @@ export function Sidebar() {
           ? cn(
               "fixed left-0 top-0 z-50",
               isOpen
-                ? "translate-x-0 w-75 shadow-2xl"
+                ? "translate-x-0 w-64 shadow-2xl"
                 : "-translate-x-full w-0 overflow-hidden border-none shadow-none"
             )
           : // Desktop: relative positioning, always visible
             cn(
               "relative z-30",
-              isCollapsed ? "w-16" : "w-75"
+              isCollapsed ? "w-16" : "w-64"
             )
       )}
       aria-label="Main navigation"
@@ -79,11 +79,9 @@ export function Sidebar() {
           aria-label="Go to homepage"
           title={isCollapsed ? "Quran" : undefined}
         >
-          {!isCollapsed && (
-         <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-sidebar-primary/10 text-sidebar-primary">
+          <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-sidebar-primary/10 text-sidebar-primary">
             <span className="text-sm font-bold">Q</span>
           </span>
-          )}
           <span
             className={cn(
               "text-lg transition-opacity duration-300",
