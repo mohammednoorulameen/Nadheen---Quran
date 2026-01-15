@@ -40,7 +40,27 @@ export function useUserSettings() {
   const [centeredReading, setCenteredReading] = useState<boolean>(true)
   const [arabicFontScale, setArabicFontScale] = useState<number>(1)
   const [translationFontScale, setTranslationFontScale] = useState<number>(1)
-  const [darkMode, setDarkMode] = useState<boolean>(true)
+  // Initialize darkMode from localStorage immediately (before first render)
+  const [darkMode, setDarkMode] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false
+    
+    // First check useTheme hook storage (theme: "dark" or "light")
+    const theme = localStorage.getItem("theme")
+    if (theme === "dark") return true
+    if (theme === "light") return false
+    
+    // Fallback: check userSettings
+    try {
+      const s = readSettings()
+      if (typeof s.darkMode === "boolean") {
+        return s.darkMode
+      }
+    } catch {
+      // Ignore errors
+    }
+    
+    return false
+  })
 
   useEffect(() => {
     const s = readSettings()
@@ -65,8 +85,18 @@ export function useUserSettings() {
     if (typeof s.translationFontScale === "number") {
       setTranslationFontScale(s.translationFontScale)
     }
-    if (typeof s.darkMode === "boolean") {
-      setDarkMode(s.darkMode)
+    // Sync darkMode from localStorage (may have been changed by useTheme)
+    try {
+      const theme = localStorage.getItem("theme")
+      if (theme === "dark" && !darkMode) {
+        setDarkMode(true)
+      } else if (theme === "light" && darkMode) {
+        setDarkMode(false)
+      } else if (typeof s.darkMode === "boolean" && s.darkMode !== darkMode) {
+        setDarkMode(s.darkMode)
+      }
+    } catch {
+      // Ignore errors
     }
   }, [])
 
@@ -101,7 +131,17 @@ export function useUserSettings() {
   useEffect(() => {
     writeSettings({ darkMode })
     if (typeof document !== "undefined") {
-      document.documentElement.classList.toggle("dark", darkMode)
+      const root = document.documentElement
+      if (darkMode) {
+        root.classList.add("dark")
+      } else {
+        root.classList.remove("dark")
+      }
+    }
+    
+    // Also sync with useTheme format for consistency
+    if (typeof window !== "undefined") {
+      localStorage.setItem("theme", darkMode ? "dark" : "light")
     }
   }, [darkMode])
 
@@ -111,6 +151,10 @@ export function useUserSettings() {
 
   const toggleResumeReading = useCallback(() => {
     setResumeReadingEnabled((v) => !v)
+  }, [])
+
+  const toggleDarkMode = useCallback(() => {
+    setDarkMode((v) => !v)
   }, [])
 
   const setAyahLayoutLine = useCallback(() => setAyahLayout("line"), [])
@@ -137,5 +181,6 @@ export function useUserSettings() {
     setTranslationFontScale,
     darkMode,
     setDarkMode,
+    toggleDarkMode,
   }
 }

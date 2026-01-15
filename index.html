@@ -5,35 +5,43 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>client</title>
+    <!-- Blocking script to prevent flash of white on dark mode -->
     <script>
-      // Prevent flash of light mode on page load
-      // This script runs synchronously before the page renders
       (function() {
-        const theme = localStorage.getItem('theme');
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        const isDark = theme === 'dark' || (!theme && prefersDark);
-        
-        if (isDark) {
-          document.documentElement.classList.add('dark');
-          if (!theme) {
-            localStorage.setItem('theme', 'dark');
+        try {
+          // Check both possible theme storage locations
+          const theme = localStorage.getItem('theme');
+          const userSettings = localStorage.getItem('v0:userSettings');
+          
+          let isDark = false;
+          
+          // Check useTheme hook storage (theme: "dark" or "light")
+          if (theme === 'dark') {
+            isDark = true;
           }
+          // Check useUserSettings storage (darkMode: boolean)
+          else if (userSettings) {
+            try {
+              const settings = JSON.parse(userSettings);
+              if (typeof settings.darkMode === 'boolean') {
+                isDark = settings.darkMode;
+              }
+            } catch (e) {
+              // Ignore parse errors
+            }
+          }
+          
+          // Apply dark class immediately before React renders
+          if (isDark) {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+        } catch (e) {
+          // Ignore localStorage errors (e.g., in private browsing)
         }
       })();
     </script>
-    <style>
-      /* Prevent flash by setting background immediately */
-      html {
-        background-color: oklch(1 0 0); /* light background */
-      }
-      html.dark {
-        background-color: oklch(0.145 0 0); /* dark background */
-      }
-      body {
-        background-color: inherit;
-        transition: background-color 0.2s ease;
-      }
-    </style>
   </head>
   <body>
     <div id="root"></div>
