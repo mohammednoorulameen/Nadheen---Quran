@@ -1,8 +1,7 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card"
-import { Badge } from "@/Components/ui/badge"
-import type { Surah } from "./Quran-browser"
-import { Link } from "react-router-dom"
-
+import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
+import { Badge } from "@/Components/ui/badge";
+import type { Surah } from "./Quran-browser";
+import { Link } from "react-router-dom";
 
 export function SurahList({ surahs }: { surahs: Surah[] }) {
   return (
@@ -11,7 +10,7 @@ export function SurahList({ surahs }: { surahs: Surah[] }) {
         <SurahCard key={s.number} surah={s} />
       ))}
     </div>
-  )
+  );
 }
 
 function SurahCard({ surah }: { surah: Surah }) {
@@ -27,8 +26,12 @@ function SurahCard({ surah }: { surah: Surah }) {
               {surah.number}
             </span>
             <div>
-              <CardTitle className="text-base font-semibold text-foreground">{surah.nameEn}</CardTitle>
-              <p className="text-xs text-muted-foreground">{surah.ayahs} verses</p>
+              <CardTitle className="text-base font-semibold text-foreground">
+                {surah.nameEn}
+              </CardTitle>
+              <p className="text-xs text-muted-foreground">
+                {surah.ayahs} verses
+              </p>
             </div>
           </div>
           <Badge variant="secondary" className="uppercase">
@@ -37,11 +40,16 @@ function SurahCard({ surah }: { surah: Surah }) {
         </CardHeader>
         <CardContent>
           {/* Arabic name with Arabic font, right-to-left direction */}
-          <p className="font-serif text-lg" dir="rtl" lang="ar" aria-label={`Arabic: ${surah.nameAr}`}>
+          <p
+            className="font-serif text-lg"
+            dir="rtl"
+            lang="ar"
+            aria-label={`Arabic: ${surah.nameAr}`}
+          >
             {surah.nameAr}
           </p>
         </CardContent>
       </Card>
     </Link>
-  )
+  );
 }

@@ -58,3 +58,4 @@ export function QuranHeader({
     </header>
   )
 }
+

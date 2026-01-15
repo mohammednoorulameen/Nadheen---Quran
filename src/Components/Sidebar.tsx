@@ -23,6 +23,7 @@ export function Sidebar() {
     { path: "/counter", label: "Counter", icon: Hash },
     { path: "/settings", label: "Settings", icon: Settings },
   ]
+  
 
   // Focus management: focus first link when sidebar opens on mobile
   useEffect(() => {

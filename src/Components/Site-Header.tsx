@@ -1,16 +1,16 @@
-import { Button } from "@/Components/ui/button"
-import { Menu } from "lucide-react"
-import { Link, useLocation } from "react-router-dom"
+import { Button } from "@/Components/ui/button";
+import { Menu } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 
-import { cn } from "@/lib/utils"
-import { useSidebar } from "@/Hook/useSidebar"
+import { cn } from "@/lib/utils";
+import { useSidebar } from "@/Hook/useSidebar";
 
 export function SiteHeader() {
-  const { toggle, isOpen} = useSidebar()
-  const location = useLocation()
+  const { toggle, isOpen } = useSidebar();
+  const location = useLocation();
 
   return (
-    <header 
+    <header
       className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur-sm supports-[backdrop-filter]:bg-card/80"
       role="banner"
     >
@@ -28,9 +28,9 @@ export function SiteHeader() {
         </div>
 
         {/* Brand - hidden on mobile when sidebar is available */}
-        <Link 
-          to="/" 
-          className="flex items-center gap-2 transition-opacity hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-md" 
+        <Link
+          to="/"
+          className="flex items-center gap-2 transition-opacity hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-md"
           aria-label="Go to homepage"
         >
           <span className="inline-flex h-9 w-9 items-center justify-center rounded-md bg-primary/10 text-primary">
@@ -42,12 +42,12 @@ export function SiteHeader() {
         </Link>
 
         {/* Desktop nav - hidden on mobile */}
-        <nav 
-          aria-label="Main navigation" 
+        <nav
+          aria-label="Main navigation"
           className="hidden items-center gap-1 md:flex"
         >
-          <Link 
-            to="/" 
+          <Link
+            to="/"
             className={cn(
               "rounded-md px-3 py-2 text-sm font-medium transition-colors",
               "hover:bg-accent hover:text-accent-foreground",
@@ -59,8 +59,8 @@ export function SiteHeader() {
           >
             Home
           </Link>
-          <Link 
-            to="/quran" 
+          <Link
+            to="/quran"
             className={cn(
               "rounded-md px-3 py-2 text-sm font-medium transition-colors",
               "hover:bg-accent hover:text-accent-foreground",
@@ -72,8 +72,8 @@ export function SiteHeader() {
           >
             Quran
           </Link>
-          <Link 
-            to="/hadith" 
+          <Link
+            to="/hadith"
             className={cn(
               "rounded-md px-3 py-2 text-sm font-medium transition-colors",
               "hover:bg-accent hover:text-accent-foreground",
@@ -109,9 +109,9 @@ export function SiteHeader() {
           >
             Settings
           </Link>
-          <Button 
-            asChild 
-            size="sm" 
+          <Button
+            asChild
+            size="sm"
             variant="default"
             className="focus:ring-2 focus:ring-ring focus:ring-offset-2"
           >
@@ -120,5 +120,5 @@ export function SiteHeader() {
         </div>
       </div>
     </header>
-  )
+  );
 }
