@@ -1,5 +1,4 @@
 import { QuranBrowser } from "@/Components/Quran-browser"
-import { LeftNav } from "@/Components/Left-nav"
 import { useEffect, useState } from "react"
 
 // Define a proper interface for the API response
@@ -54,19 +53,12 @@ export default function QuranPage() {
   }, [])
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-6 md:py-10">
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[240px_minmax(0,1fr)_260px]">
-        {/* Left Navigation */}
-        <aside className="hidden lg:block">
-          <div className="sticky top-20">
-            <LeftNav />
-          </div>
-        </aside>
-
+    <div className="mx-auto w-full max-w-7xl px-4 py-6 md:px-6 md:py-8">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_280px]">
         {/* Main Quran Section */}
-        <section className="space-y-4">
-          <header>
-            <h1 className="text-xl font-semibold">Surahs</h1>
+        <section className="space-y-6">
+          <header className="space-y-1">
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">Surahs</h1>
             <p className="text-sm text-muted-foreground">Browse all 114 chapters</p>
           </header>
           <QuranBrowser initialSurahs={surahs} />
@@ -74,14 +66,16 @@ export default function QuranPage() {
 
         {/* Right Tips Section */}
         <aside className="hidden lg:block">
-          <div className="sticky top-20 space-y-4">
-            <div className="rounded-lg border bg-card p-4">
-              <h3 className="mb-2 text-sm font-semibold">Tips</h3>
-              <p className="text-sm text-muted-foreground">Use the search to filter Surahs quickly.</p>
+          <div className="sticky top-24 space-y-4">
+            <div className="rounded-lg border border-border bg-card p-4 shadow-sm">
+              <h3 className="mb-2 text-sm font-semibold text-foreground">Tips</h3>
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                Use the search to filter Surahs quickly.
+              </p>
             </div>
           </div>
         </aside>
       </div>
-    </main>
+    </div>
   )
 }

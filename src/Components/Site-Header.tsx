@@ -1,65 +1,221 @@
+// import { Button } from "@/Components/ui/button"
+// import { Menu } from "lucide-react"
+// import { Link, useLocation } from "react-router-dom"
+// import { useSidebar } from "@/Context/SidebarContext"
+// import { cn } from "@/lib/utils"
+
+// export function SiteHeader() {
+//   const { toggle, isOpen } = useSidebar()
+//   const location = useLocation()
+
+//   return (
+//     <header
+//       className="
+//         sticky top-0 z-40
+//         border-b border-border
+//         bg-card/95 backdrop-blur
+//         supports-[backdrop-filter]:bg-card/80
+//       "
+//       role="banner"
+//     >
+//       <div className="flex h-16 items-center justify-between px-4 md:px-6">
+        
+//         {/* Mobile menu */}
+//         <div className="flex items-center md:hidden">
+//           <button
+//             onClick={toggle}
+//             aria-label={isOpen ? "Close sidebar" : "Open sidebar"}
+//             aria-expanded={isOpen}
+//             className="
+//               inline-flex h-9 w-9 items-center justify-center
+//               rounded-md border border-border
+//               bg-card text-foreground
+//               transition-colors
+//               hover:bg-accent hover:text-accent-foreground
+//               focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2
+//               active:scale-95
+//             "
+//           >
+//             {/* <Menu className="h-5 w-5" /> */}
+//           </button>
+//         </div>
+
+//         {/* Desktop navigation */}
+//         <nav
+//           aria-label="Main navigation"
+//           className="hidden items-center gap-1 md:flex"
+//         >
+//           {[
+//             { to: "/", label: "Home" },
+//             { to: "/quran", label: "Quran" },
+//             { to: "/hadith", label: "Hadith" },
+//           ].map(item => (
+//             <Link
+//               key={item.to}
+//               to={item.to}
+//               className={cn(
+//                 "rounded-md px-3 py-2 text-sm font-medium transition-colors",
+//                 "hover:bg-accent hover:text-accent-foreground",
+//                 "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+//                 location.pathname === item.to ||
+//                   location.pathname.startsWith(item.to + "/")
+//                   ? "bg-accent text-accent-foreground"
+//                   : "text-muted-foreground"
+//               )}
+//             >
+//               {item.label}
+//             </Link>
+//           ))}
+//         </nav>
+
+//         {/* Actions */}
+//         <div className="flex items-center gap-2 md:gap-3">
+//           <Link
+//             to="/settings"
+//             className={cn(
+//               "hidden md:inline-flex items-center",
+//               "rounded-md border border-border bg-card",
+//               "px-3 py-1.5 text-sm font-medium transition-colors",
+//               "hover:bg-accent hover:text-accent-foreground",
+//               "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+//               location.pathname === "/settings"
+//                 ? "bg-accent text-accent-foreground"
+//                 : "text-muted-foreground"
+//             )}
+//           >
+//             Settings
+//           </Link>
+
+//           <Button
+//             asChild
+//             size="sm"
+//             className="focus:ring-2 focus:ring-ring focus:ring-offset-2"
+//           >
+//             <Link to="/surah/1">Read</Link>
+//           </Button>
+//         </div>
+//       </div>
+//     </header>
+//   )
+// }
+
 import { Button } from "@/Components/ui/button"
-import { Dialog, DialogContent, DialogTrigger } from "@/Components/ui/dialog"
 import { Menu } from "lucide-react"
-import { LeftNav } from "@/Components/Left-nav"
-import { Link } from "react-router-dom"
+import { Link, useLocation } from "react-router-dom"
+
+import { cn } from "@/lib/utils"
+import { useSidebar } from "@/Hook/useSidebar"
 
 export function SiteHeader() {
+  const { toggle, isOpen, isMobile } = useSidebar()
+  const location = useLocation()
+
   return (
-    <header className="sticky top-0 z-50 border-b bg-card/70 backdrop-blur supports-[backdrop-filter]:bg-card/60">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-        {/* Mobile menu */}
-        <div className="flex items-center gap-2 md:hidden">
-          <Dialog>
-            <DialogTrigger asChild>
-              <button
-                aria-label="Open menu"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-md border bg-card hover:bg-accent"
-              >
-                <Menu className="h-5 w-5" />
-              </button>
-            </DialogTrigger>
-            <DialogContent className="p-0 sm:max-w-lg">
-              <div className="max-h-[80vh] overflow-auto">
-                <LeftNav variant="sheet" />
-              </div>
-            </DialogContent>
-          </Dialog>
+    <header 
+      className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur-sm supports-[backdrop-filter]:bg-card/80"
+      role="banner"
+    >
+      <div className="mx-auto flex h-16 max-w-full items-center justify-between px-4 md:px-6">
+        {/* Mobile menu button */}
+        <div className="flex items-center gap-3 md:hidden">
+          <button
+            onClick={toggle}
+            aria-label={isOpen ? "Close sidebar" : "Open sidebar"}
+            aria-expanded={isOpen}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-card text-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 active:scale-95"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
         </div>
-        {/* Brand */}
-        <Link to="/" className="flex items-center gap-2" aria-label="Go to homepage">
-          <span className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary">
+
+        {/* Brand - hidden on mobile when sidebar is available */}
+        <Link 
+          to="/" 
+          className="flex items-center gap-2 transition-opacity hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-md" 
+          aria-label="Go to homepage"
+        >
+          <span className="inline-flex h-9 w-9 items-center justify-center rounded-md bg-primary/10 text-primary">
             <span className="text-sm font-bold">Q</span>
           </span>
-          <span className="text-lg font-semibold text-primary">Quran</span>
+          <span className="hidden text-lg font-semibold text-foreground sm:inline md:text-xl">
+            Quran
+          </span>
         </Link>
-        {/* Desktop nav */}
-        <nav aria-label="Main" className="hidden items-center gap-4 md:flex">
-          <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">
+
+        {/* Desktop nav - hidden on mobile */}
+        <nav 
+          aria-label="Main navigation" 
+          className="hidden items-center gap-1 md:flex"
+        >
+          <Link 
+            to="/" 
+            className={cn(
+              "rounded-md px-3 py-2 text-sm font-medium transition-colors",
+              "hover:bg-accent hover:text-accent-foreground",
+              "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+              location.pathname === "/"
+                ? "bg-accent text-accent-foreground"
+                : "text-muted-foreground"
+            )}
+          >
+            Home
+          </Link>
+          <Link 
+            to="/quran" 
+            className={cn(
+              "rounded-md px-3 py-2 text-sm font-medium transition-colors",
+              "hover:bg-accent hover:text-accent-foreground",
+              "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+              location.pathname.startsWith("/quran")
+                ? "bg-accent text-accent-foreground"
+                : "text-muted-foreground"
+            )}
+          >
             Quran
           </Link>
-          <Link to="/hadith" className="text-sm text-muted-foreground hover:text-foreground">
+          <Link 
+            to="/hadith" 
+            className={cn(
+              "rounded-md px-3 py-2 text-sm font-medium transition-colors",
+              "hover:bg-accent hover:text-accent-foreground",
+              "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+              location.pathname.startsWith("/hadith")
+                ? "bg-accent text-accent-foreground"
+                : "text-muted-foreground"
+            )}
+          >
             Hadith
           </Link>
-          <Link to="/books" className="text-sm text-muted-foreground hover:text-foreground">
-            Books
-          </Link>
         </nav>
+
         {/* Actions */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 md:gap-3">
           <span
             id="scroll-progress-label"
             aria-live="polite"
-            className="hidden text-xs header-remaining md:inline"
+            className="hidden text-xs font-medium text-muted-foreground header-remaining md:inline"
           ></span>
           <Link
             to="/settings"
-            className="hidden rounded-md border bg-card px-3 py-1.5 text-sm text-muted-foreground hover:bg-accent md:inline"
+            className={cn(
+              "hidden rounded-md border border-border bg-card px-3 py-1.5 text-sm font-medium transition-colors",
+              "hover:bg-accent hover:text-accent-foreground",
+              "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+              "md:inline-flex items-center",
+              location.pathname === "/settings"
+                ? "bg-accent text-accent-foreground"
+                : "text-muted-foreground"
+            )}
             aria-label="Open settings"
           >
             Settings
           </Link>
-          <Button asChild size="sm" variant="secondary">
+          <Button 
+            asChild 
+            size="sm" 
+            variant="default"
+            className="focus:ring-2 focus:ring-ring focus:ring-offset-2"
+          >
             <Link to="/surah/1">Read</Link>
           </Button>
         </div>

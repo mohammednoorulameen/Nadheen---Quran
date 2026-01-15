@@ -25,19 +25,21 @@ import HomeQuickCards from "@/Components/Home-quick-cards"
 
 // ← Remove "use client" here
 
-export default  function Homepage() {
+export default function Homepage() {
   // const surahs =  getSurahs() // server fetch
   return (
-    <main className="mx-auto max-w-5xl px-4 py-10">
-      <header className="mb-6">
-        <h1 className="text-balance text-2xl font-semibold">Explore</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+    <div className="mx-auto w-full max-w-7xl px-4 py-6 md:px-6 md:py-8">
+      <header className="mb-8 space-y-2">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
+          Explore
+        </h1>
+        <p className="text-sm text-muted-foreground md:text-base">
           Quick access to Quran, Hadith, Counter, and more.
         </p>
       </header>
 
       <HomeQuickCards />
-    </main>
+    </div>
   )
 }
 
