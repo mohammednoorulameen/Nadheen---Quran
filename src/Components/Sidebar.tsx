@@ -1,30 +1,27 @@
+import { Link, useLocation } from "react-router-dom";
+import { ChevronLeft, Home, BookOpen, Hash, Settings } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "./ui/button";
 
-
-import { Link, useLocation } from "react-router-dom"
-import { ChevronLeft, Home, BookOpen, Hash, Settings} from "lucide-react"
-import { cn } from "@/lib/utils"
-import { Button } from "./ui/button"
-
-import { useEffect, useRef } from "react"
-import { useSidebar } from "@/Hook/useSidebar"
+import { useEffect, useRef } from "react";
+import { useSidebar } from "@/Hook/useSidebar";
 
 export function Sidebar() {
-  const { isOpen, isCollapsed, isMobile, toggle, close } = useSidebar()
-  const location = useLocation()
-  const sidebarRef = useRef<HTMLElement>(null)
-  const firstLinkRef = useRef<HTMLAnchorElement>(null)
+  const { isOpen, isCollapsed, isMobile, toggle, close } = useSidebar();
+  const location = useLocation();
+  const sidebarRef = useRef<HTMLElement>(null);
+  const firstLinkRef = useRef<HTMLAnchorElement>(null);
 
   // const isActive = (path: string) => {
   //   return location.pathname === path || location.pathname.startsWith(path + "/")
   // }
 
-   const isActive = (path: string) => {
+  const isActive = (path: string) => {
     if (path === "/") {
-      return location.pathname === "/"
+      return location.pathname === "/";
     }
-    return location.pathname.startsWith(path)
-  }
-
+    return location.pathname.startsWith(path);
+  };
 
   const navItems = [
     { path: "/", label: "Home", icon: Home },
@@ -32,18 +29,17 @@ export function Sidebar() {
     { path: "/hadith", label: "Hadith", icon: BookOpen },
     { path: "/counter", label: "Counter", icon: Hash },
     { path: "/settings", label: "Settings", icon: Settings },
-  ]
-  
+  ];
 
   // Focus management: focus first link when sidebar opens on mobile
   useEffect(() => {
     if (isOpen && isMobile && firstLinkRef.current) {
       const timer = setTimeout(() => {
-        firstLinkRef.current?.focus()
-      }, 150)
-      return () => clearTimeout(timer)
+        firstLinkRef.current?.focus();
+      }, 150);
+      return () => clearTimeout(timer);
     }
-  }, [isOpen, isMobile])
+  }, [isOpen, isMobile]);
 
   return (
     <aside
@@ -60,10 +56,7 @@ export function Sidebar() {
                 : "-translate-x-full w-0 overflow-hidden border-none shadow-none"
             )
           : // Desktop: relative positioning, always visible
-            cn(
-              "relative z-30",
-              isCollapsed ? "w-16" : "w-64"
-            )
+            cn("relative z-30", isCollapsed ? "w-16" : "w-64")
       )}
       aria-label="Main navigation"
       aria-hidden={isMobile ? !isOpen : false}
@@ -73,35 +66,15 @@ export function Sidebar() {
       <div
         className={cn(
           "flex h-16 items-center border-b border-sidebar-border transition-all duration-300",
-          isMobile ? "justify-between px-4" : isCollapsed ? "justify-center px-2" : "justify-between px-4"
+          isMobile
+            ? "justify-between px-4"
+            : isCollapsed
+            ? "justify-center px-2"
+            : "justify-between px-4"
         )}
       >
         {/* Brand Logo */}
-        {/* <Link
-          to="/"
-          className={cn(
-            "flex items-center gap-2 font-semibold text-sidebar-foreground transition-all duration-300",
-            "hover:text-sidebar-primary focus:outline-none focus:ring-2 focus:ring-sidebar-ring focus:ring-offset-2 focus:ring-offset-sidebar rounded-md",
-            isCollapsed && "justify-center",
-            isMobile && "flex-shrink-0"
-          )}
-          onClick={() => isMobile && close()}
-          aria-label="Go to homepage"
-          title={isCollapsed ? "Quran" : undefined}
-        >
-          <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-sidebar-primary/10 text-sidebar-primary">
-          { isOpen && <span className="text-sm font-bold">Q</span>}
-          </span>
-          <span
-            className={cn(
-              "text-lg transition-opacity duration-300",
-              isCollapsed ? "hidden" : "block"
-            )}
-          >
-            Quran
-          </span>
-        </Link> */}
-         <Link
+        <Link
           to="/"
           className={cn(
             "flex items-center gap-2 font-semibold text-sidebar-foreground transition-all duration-300",
@@ -114,9 +87,9 @@ export function Sidebar() {
           title={isCollapsed ? "Quran" : undefined}
         >
           {!isCollapsed && (
-         <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-sidebar-primary/10 text-sidebar-primary">
-            <span className="text-sm font-bold">Q</span>
-          </span>
+            <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-sidebar-primary/10 text-sidebar-primary">
+              <span className="text-sm font-bold">Q</span>
+            </span>
           )}
           <span
             className={cn(
@@ -127,7 +100,6 @@ export function Sidebar() {
             Quran
           </span>
         </Link>
-
 
         {/* Toggle button */}
         <Button
@@ -140,7 +112,15 @@ export function Sidebar() {
             "focus:ring-2 focus:ring-sidebar-ring focus:ring-offset-2 focus:ring-offset-sidebar",
             isCollapsed && "mx-auto"
           )}
-          aria-label={isMobile ? (isOpen ? "Close sidebar" : "Open sidebar") : isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          aria-label={
+            isMobile
+              ? isOpen
+                ? "Close sidebar"
+                : "Open sidebar"
+              : isCollapsed
+              ? "Expand sidebar"
+              : "Collapse sidebar"
+          }
           aria-expanded={isMobile ? isOpen : !isCollapsed}
         >
           {isMobile ? (
@@ -174,9 +154,9 @@ export function Sidebar() {
             )}
             <ul className="space-y-1">
               {navItems.map((item, index) => {
-                const Icon = item.icon
-                const active = isActive(item.path)
-                const isFirst = index === 0
+                const Icon = item.icon;
+                const active = isActive(item.path);
+                const isFirst = index === 0;
 
                 return (
                   <li key={item.path}>
@@ -187,13 +167,9 @@ export function Sidebar() {
                       className={cn(
                         "flex items-center gap-3 rounded-lg text-sm font-medium transition-all duration-200",
                         "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                        "focus:outline-none focus:ring-2 focus:ring-sidebar-ring focus:ring-offset-2 focus:ring-offset-sidebar",
-                        // active
-                        //   ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
-                        //   : "text-sidebar-foreground/80",
                         active
-  ? "bg-sidebar-accent text-sidebar-primary ring-1 ring-sidebar-primary"
-  : "text-sidebar-foreground/80",
+                          ? "bg-sidebar-accent text-sidebar-primary ring-1 ring-sidebar-primary "
+                          : "text-sidebar-foreground/80",
 
                         isCollapsed
                           ? "justify-center px-2 py-2.5"
@@ -214,7 +190,7 @@ export function Sidebar() {
                       </span>
                     </Link>
                   </li>
-                )
+                );
               })}
             </ul>
           </div>
@@ -260,7 +236,9 @@ export function Sidebar() {
           {/* Support Section - Hidden when collapsed */}
           {!isCollapsed && (
             <div className="rounded-lg border border-sidebar-border bg-sidebar-accent/50 p-4">
-              <h3 className="mb-2 text-sm font-semibold text-sidebar-foreground">Support</h3>
+              <h3 className="mb-2 text-sm font-semibold text-sidebar-foreground">
+                Support
+              </h3>
               <p className="mb-3 text-xs leading-relaxed text-sidebar-foreground/70">
                 Monthly donations help sustain projects.
               </p>
@@ -276,5 +254,5 @@ export function Sidebar() {
         </div>
       </nav>
     </aside>
-  )
+  );
 }
