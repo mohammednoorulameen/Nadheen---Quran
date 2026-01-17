@@ -4,9 +4,12 @@ import LayoutPage from "../Pages/User/LayoutPage/LayoutPage";
 import Quran from "@/Pages/User/Quran/Quran";
 // import GetSurah from "@/Pages/User/Surah/GetSurah";
 import SurahPage from "@/Pages/User/Surah/GetSurah";
+import SettingsPage from "@/Pages/User/Settings/Settings";
+
 
 
 const UserRouters = [
+  
   {
       path:"/",
         element: (
@@ -26,6 +29,10 @@ const UserRouters = [
       {
         path: "/surah/:number",
         element: <SurahPage/>
+      },
+      {
+        path: "/settings",
+        element: <SettingsPage/>
       },
       {
         path: "*",

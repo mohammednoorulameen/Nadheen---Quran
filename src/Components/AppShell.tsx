@@ -55,7 +55,8 @@ export function AppShell({ children }: AppShellProps) {
         {/* Mobile overlay */}
         {isMobile && isOpen && (
           <div
-            className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm transition-opacity duration-300"
+            // className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm transition-opacity duration-300"
+            className="fixed inset-0 z-40  backdrop-blur-sm transition-opacity duration-300"
             onClick={close}
             onTouchStart={close}
             aria-hidden="true"

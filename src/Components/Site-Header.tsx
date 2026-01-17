@@ -17,7 +17,7 @@ export function SiteHeader() {
     >
       <div className="mx-auto flex h-16 max-w-full items-center justify-between px-4 md:px-6">
         {/* Mobile menu button */}
-        <div className="flex items-center gap-3 md:hidden">
+       {!isOpen && ( <div className="flex items-center gap-3 md:hidden">
           <button
             onClick={toggle}
             aria-label={isOpen ? "Close sidebar" : "Open sidebar"}
@@ -27,6 +27,7 @@ export function SiteHeader() {
             <Menu className="h-5 w-5" />
           </button>
         </div>
+        )}
 
         {/* Brand - hidden on mobile when sidebar is available */}
         <Link
@@ -35,7 +36,7 @@ export function SiteHeader() {
           aria-label="Go to homepage"
         >
           <span className="inline-flex h-9 w-9 items-center justify-center rounded-md bg-primary/10 text-primary">
-            <span className="text-sm font-bold">Q</span>
+          { !isOpen && <span className="text-sm font-bold">Q</span>}
           </span>
           <span className="hidden text-lg font-semibold text-foreground sm:inline md:text-xl">
             Quran

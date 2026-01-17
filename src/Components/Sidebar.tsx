@@ -1,3 +1,5 @@
+
+
 import { Link, useLocation } from "react-router-dom"
 import { ChevronLeft, Home, BookOpen, Hash, Settings} from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -12,9 +14,17 @@ export function Sidebar() {
   const sidebarRef = useRef<HTMLElement>(null)
   const firstLinkRef = useRef<HTMLAnchorElement>(null)
 
-  const isActive = (path: string) => {
-    return location.pathname === path || location.pathname.startsWith(path + "/")
+  // const isActive = (path: string) => {
+  //   return location.pathname === path || location.pathname.startsWith(path + "/")
+  // }
+
+   const isActive = (path: string) => {
+    if (path === "/") {
+      return location.pathname === "/"
+    }
+    return location.pathname.startsWith(path)
   }
+
 
   const navItems = [
     { path: "/", label: "Home", icon: Home },
@@ -67,7 +77,7 @@ export function Sidebar() {
         )}
       >
         {/* Brand Logo */}
-        <Link
+        {/* <Link
           to="/"
           className={cn(
             "flex items-center gap-2 font-semibold text-sidebar-foreground transition-all duration-300",
@@ -80,7 +90,7 @@ export function Sidebar() {
           title={isCollapsed ? "Quran" : undefined}
         >
           <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-sidebar-primary/10 text-sidebar-primary">
-            <span className="text-sm font-bold">Q</span>
+          { isOpen && <span className="text-sm font-bold">Q</span>}
           </span>
           <span
             className={cn(
@@ -90,7 +100,34 @@ export function Sidebar() {
           >
             Quran
           </span>
+        </Link> */}
+         <Link
+          to="/"
+          className={cn(
+            "flex items-center gap-2 font-semibold text-sidebar-foreground transition-all duration-300",
+            "hover:text-sidebar-primary focus:outline-none focus:ring-2 focus:ring-sidebar-ring focus:ring-offset-2 focus:ring-offset-sidebar rounded-md",
+            isCollapsed && "justify-center",
+            isMobile && "flex-shrink-0"
+          )}
+          onClick={() => isMobile && close()}
+          aria-label="Go to homepage"
+          title={isCollapsed ? "Quran" : undefined}
+        >
+          {!isCollapsed && (
+         <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-sidebar-primary/10 text-sidebar-primary">
+            <span className="text-sm font-bold">Q</span>
+          </span>
+          )}
+          <span
+            className={cn(
+              "text-lg transition-opacity duration-300",
+              isCollapsed ? "hidden" : "block"
+            )}
+          >
+            Quran
+          </span>
         </Link>
+
 
         {/* Toggle button */}
         <Button
@@ -151,9 +188,13 @@ export function Sidebar() {
                         "flex items-center gap-3 rounded-lg text-sm font-medium transition-all duration-200",
                         "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                         "focus:outline-none focus:ring-2 focus:ring-sidebar-ring focus:ring-offset-2 focus:ring-offset-sidebar",
+                        // active
+                        //   ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
+                        //   : "text-sidebar-foreground/80",
                         active
-                          ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
-                          : "text-sidebar-foreground/80",
+  ? "bg-sidebar-accent text-sidebar-primary ring-1 ring-sidebar-primary"
+  : "text-sidebar-foreground/80",
+
                         isCollapsed
                           ? "justify-center px-2 py-2.5"
                           : "px-3 py-2.5",
